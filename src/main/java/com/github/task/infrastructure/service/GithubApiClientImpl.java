@@ -21,13 +21,13 @@ import com.github.task.domain.model.Branch;
 import com.github.task.domain.model.Repository;
 
 @Component
-public class RestTemplateGithubApiClient implements GithubApiClient {
+public class GithubApiClientImpl implements GithubApiClient {
 
-    private static final Logger log = LoggerFactory.getLogger(RestTemplateGithubApiClient.class);
+    private static final Logger log = LoggerFactory.getLogger(GithubApiClientImpl.class);
 
     private final RestTemplate restTemplate;
 
-    public RestTemplateGithubApiClient(
+    public GithubApiClientImpl(
             @Qualifier(Constants.GITHUB_TEMPLATE_QUALIFIER) RestTemplate restTemplate) {
 
         this.restTemplate = restTemplate;

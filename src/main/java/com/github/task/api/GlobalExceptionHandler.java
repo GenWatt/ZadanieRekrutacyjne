@@ -9,7 +9,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.task.api.dto.ErrorDto;
+import com.github.task.application.dto.ErrorDto;
 import com.github.task.domain.exception.UserNotFoundException;
 
 @ControllerAdvice

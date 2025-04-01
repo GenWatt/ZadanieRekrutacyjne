@@ -19,8 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.github.task.api.dto.ErrorDto;
-import com.github.task.api.dto.RepositoryDto;
+import com.github.task.application.dto.ErrorDto;
+import com.github.task.application.dto.RepositoryDto;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -33,7 +33,7 @@ public class GithubControllerIntegrationTest {
     private TestRestTemplate restTemplate;
 
     private String buildUrl(String username) {
-        return "http://localhost:" + port + "/api/users/" + username + "/repositories";
+        return "http://localhost:" + port + "/api/v1/users/" + username + "/repositories";
     }
 
     private ParameterizedTypeReference<List<RepositoryDto>> getParameterizedTypeReference = new ParameterizedTypeReference<>() {
@@ -43,7 +43,7 @@ public class GithubControllerIntegrationTest {
     @DisplayName("When valid username, then repositories should be returned")
     public void whenValidUsername_thenRepositoriesShouldBeReturned() {
         // Given
-        String username = "octocat";
+        String username = "GenWattStudent";
 
         // When
         ResponseEntity<List<RepositoryDto>> response = restTemplate.exchange(
@@ -75,7 +75,7 @@ public class GithubControllerIntegrationTest {
     @DisplayName("When invalid username, then NotFound error should be returned")
     public void whenInvalidUsername_thenNotFoundErrorShouldBeReturned() {
         // Given
-        String invalidUsername = "this-user-does-not-exist-12345-abcdef";
+        String invalidUsername = "GenWattStudentInvalid12324354534534";
 
         // When
         ResponseEntity<ErrorDto> response = restTemplate.getForEntity(

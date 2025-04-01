@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.github.task.api.dto.RepositoryDto;
+import com.github.task.application.dto.RepositoryDto;
+import com.github.task.application.service.GithubService;
 import com.github.task.domain.Constants;
-import com.github.task.infrastructure.service.GithubServiceImpl;
 
 import java.util.List;
 
@@ -16,9 +16,9 @@ import java.util.List;
 @RequestMapping(Constants.API_ROUTE)
 public class GithubController {
 
-    private final GithubServiceImpl githubService;
+    private final GithubService githubService;
 
-    public GithubController(GithubServiceImpl githubService) {
+    public GithubController(GithubService githubService) {
         this.githubService = githubService;
     }
 

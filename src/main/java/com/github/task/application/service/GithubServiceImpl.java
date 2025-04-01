@@ -1,14 +1,15 @@
-package com.github.task.infrastructure.service;
+package com.github.task.application.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.task.api.dto.RepositoryDto;
+import com.github.task.application.dto.RepositoryDto;
 import com.github.task.domain.model.Branch;
 import com.github.task.domain.model.Repository;
 import com.github.task.infrastructure.mapper.RepositoryMapper;
+import com.github.task.infrastructure.service.GithubApiClient;
 
 import java.util.Collections;
 import java.util.List;

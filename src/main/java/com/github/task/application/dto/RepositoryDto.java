@@ -1,4 +1,4 @@
-package com.github.task.api.dto;
+package com.github.task.application.dto;
 
 import java.util.List;
 

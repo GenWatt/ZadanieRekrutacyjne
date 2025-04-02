@@ -9,15 +9,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.RestClient;
 
 import com.github.task.application.dto.ErrorDto;
 import com.github.task.application.dto.RepositoryDto;
@@ -29,14 +27,13 @@ public class GithubControllerIntegrationTest {
     @LocalServerPort
     private int port;
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+    private final RestClient restClient = RestClient.create();
 
     private String buildUrl(String username) {
         return "http://localhost:" + port + "/api/v1/users/" + username + "/repositories";
     }
 
-    private ParameterizedTypeReference<List<RepositoryDto>> getParameterizedTypeReference = new ParameterizedTypeReference<>() {
+    private final ParameterizedTypeReference<List<RepositoryDto>> repositoryListTypeRef = new ParameterizedTypeReference<>() {
     };
 
     @Test
@@ -46,11 +43,10 @@ public class GithubControllerIntegrationTest {
         String username = "GenWattStudent";
 
         // When
-        ResponseEntity<List<RepositoryDto>> response = restTemplate.exchange(
-                buildUrl(username),
-                HttpMethod.GET,
-                null,
-                getParameterizedTypeReference);
+        ResponseEntity<List<RepositoryDto>> response = restClient.get()
+                .uri(buildUrl(username))
+                .retrieve()
+                .toEntity(repositoryListTypeRef);
 
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode(), "Expected HTTP status 200 OK");
@@ -78,9 +74,10 @@ public class GithubControllerIntegrationTest {
         String invalidUsername = "GenWattStudentInvalid12324354534534";
 
         // When
-        ResponseEntity<ErrorDto> response = restTemplate.getForEntity(
-                buildUrl(invalidUsername),
-                ErrorDto.class);
+        ResponseEntity<ErrorDto> response = restClient.get()
+                .uri(buildUrl(invalidUsername))
+                .retrieve()
+                .toEntity(ErrorDto.class);
 
         // Then
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode(), "Expected HTTP status 404 NOT FOUND");

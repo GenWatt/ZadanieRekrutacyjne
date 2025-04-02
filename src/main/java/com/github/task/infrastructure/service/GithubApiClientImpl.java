@@ -11,8 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import com.github.task.domain.Constants;
 import com.github.task.domain.exception.GithubApiErrorException;
@@ -24,66 +23,60 @@ import com.github.task.domain.model.Repository;
 public class GithubApiClientImpl implements GithubApiClient {
 
     private static final Logger log = LoggerFactory.getLogger(GithubApiClientImpl.class);
-
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     public GithubApiClientImpl(
-            @Qualifier(Constants.GITHUB_TEMPLATE_QUALIFIER) RestTemplate restTemplate) {
-
-        this.restTemplate = restTemplate;
+            @Qualifier(Constants.GITHUB_CLIENT_QUALIFIER) RestClient restClient) {
+        this.restClient = restClient;
     }
 
     @Override
     public List<Repository> fetchRepositories(String username) {
         log.debug("Fetching repositories for user: {}", username);
+
         try {
-            Repository[] repositories = restTemplate.getForObject(
-                    Constants.GITHUB_API_REPOS,
-                    Repository[].class,
-                    username);
+            Repository[] repositories = restClient.get()
+                    .uri(Constants.GITHUB_API_REPOS, username)
+                    .retrieve()
+                    .body(Repository[].class);
 
             return repositories != null ? Arrays.asList(repositories) : Collections.emptyList();
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                log.warn("GitHub user not found: {}", username, ex);
-                throw new UserNotFoundException(": " + username);
+                log.warn("User not found: {}", username);
+                throw new UserNotFoundException(username);
             }
-
-            log.error("Error fetching repositories for user {}: {}", username, ex.getMessage(), ex);
+            log.error("HTTP error while fetching repositories: {}", ex.getMessage());
             throw ex;
-        } catch (RestClientException ex) {
-            log.error("RestClientException while fetching repositories for user {}: {}", username, ex.getMessage(), ex);
-            throw new GithubApiErrorException(
-                    "Network or client error while fetching repositories for user " + username, ex);
+        } catch (Exception ex) {
+            log.error("Error fetching repositories for user {}: {}", username, ex.getMessage(), ex);
+            throw new GithubApiErrorException("Error fetching repositories: " + ex.getMessage(), ex);
         }
     }
 
     @Override
     public Optional<List<Branch>> fetchBranches(String username, String repoName) {
         log.debug("Fetching branches for repository: {}/{}", username, repoName);
+
         try {
-            Branch[] branches = restTemplate.getForObject(
-                    Constants.GITHUB_API_BRANCHES, Branch[].class,
-                    username,
-                    repoName);
+            Branch[] branches = restClient.get()
+                    .uri(Constants.GITHUB_API_BRANCHES, username, repoName)
+                    .retrieve()
+                    .body(Branch[].class);
 
             return Optional.ofNullable(branches)
                     .map(Arrays::asList)
                     .or(Optional::empty);
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                log.warn("Branches not found (or repo not found) for {}/{}: {}", username, repoName, ex.getMessage());
+                log.warn("Repository or branches not found: {}/{}", username, repoName);
                 return Optional.empty();
             }
-
-            log.error("Error fetching branches for repository {}/{}: {}", username, repoName, ex.getMessage(), ex);
-
+            log.error("HTTP error while fetching branches: {}", ex.getMessage());
             throw ex;
-        } catch (RestClientException ex) {
-            log.error("RestClientException while fetching branches for {}/{}: {}", username, repoName, ex.getMessage(),
-                    ex);
-
-            return Optional.empty();
+        } catch (Exception ex) {
+            log.error("Error fetching branches for {}/{}: {}", username, repoName, ex.getMessage(), ex);
+            throw new GithubApiErrorException("Error fetching branches: " + ex.getMessage(), ex);
         }
     }
 }

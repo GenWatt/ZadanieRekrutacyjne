@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.task.application.dto.ErrorDto;
+import com.github.task.domain.exception.GithubApiErrorException;
 import com.github.task.domain.exception.UserNotFoundException;
 
 @ControllerAdvice
@@ -19,11 +20,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorDto> handleUserNotFoundException(UserNotFoundException ex) {
+        logger.warn("User not found: {}", ex.getMessage());
         ErrorDto errorResponse = new ErrorDto(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(GithubApiErrorException.class)
+    public ResponseEntity<ErrorDto> handleGithubApiErrorException(GithubApiErrorException ex) {
+        logger.error("GitHub API error occurred", ex);
+        ErrorDto errorResponse = new ErrorDto(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "GitHub API error: " + ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(HttpClientErrorException.class)
@@ -32,10 +44,10 @@ public class GlobalExceptionHandler {
         String message = ex.getMessage();
 
         if (status == HttpStatus.FORBIDDEN && message.contains("rate limit")) {
-            logger.warn("GitHub API rate limit exceeded: {}", message);
+            logger.warn("Rate limit exceeded: {}", message);
             ErrorDto errorResponse = new ErrorDto(
                     status.value(),
-                    "GitHub API rate limit exceeded. Please try again later.");
+                    "Rate limit exceeded. Please try again later.");
             return new ResponseEntity<>(errorResponse, status);
         }
 
@@ -50,6 +62,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleGenericException(Exception ex) {
         logger.error("An unexpected error occurred", ex);
+
         ErrorDto errorResponse = new ErrorDto(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal server error: " + ex.getMessage());

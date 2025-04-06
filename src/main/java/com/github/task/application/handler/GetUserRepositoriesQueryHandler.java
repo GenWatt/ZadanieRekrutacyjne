@@ -1,13 +1,15 @@
-package com.github.task.application.service;
+package com.github.task.application.handler;
 
-import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import com.github.task.application.dto.RepositoryDto;
+import com.github.task.application.query.GetUserRepositoriesQuery;
+import com.github.task.domain.exception.UsernameException;
 import com.github.task.domain.model.Branch;
 import com.github.task.domain.model.Repository;
+import com.github.task.domain.validator.GithubUsernameValidator;
 import com.github.task.infrastructure.mapper.RepositoryMapper;
 import com.github.task.infrastructure.service.GithubApiClient;
 
@@ -19,27 +21,34 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-@Service
-public class GithubServiceImpl implements GithubService {
+@Component
+public class GetUserRepositoriesQueryHandler
+        implements QueryHandler<GetUserRepositoriesQuery, List<RepositoryDto>>, AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(GithubServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(GetUserRepositoriesQueryHandler.class);
     private final GithubApiClient githubApiClient;
     private final RepositoryMapper repositoryMapper;
     private final ExecutorService executorService;
+    private final GithubUsernameValidator githubUsernameValidator;
 
-    public GithubServiceImpl(
+    public GetUserRepositoriesQueryHandler(
             GithubApiClient githubApiClient,
-            RepositoryMapper repositoryMapper) {
+            RepositoryMapper repositoryMapper,
+            GithubUsernameValidator githubUsernameValidator) {
 
         this.githubApiClient = githubApiClient;
         this.repositoryMapper = repositoryMapper;
-        this.executorService = Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors());
+        this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        this.githubUsernameValidator = githubUsernameValidator;
     }
 
-    public List<RepositoryDto> getUserRepositories(String username) {
-        Assert.hasText(username, "Username must not be empty");
-        logger.debug("Fetching repositories for user: {}", username);
+    @Override
+    public List<RepositoryDto> handle(GetUserRepositoriesQuery query) {
+        String username = query.getUsername();
+
+        if (!githubUsernameValidator.isValid(username)) {
+            throw new UsernameException("Username cannot be null or empty");
+        }
 
         List<Repository> repositories = githubApiClient.fetchRepositories(username);
 
@@ -50,10 +59,10 @@ public class GithubServiceImpl implements GithubService {
         List<CompletableFuture<RepositoryDto>> futures = nonForkRepositories.stream()
                 .map(repository -> CompletableFuture.supplyAsync(() -> {
                     try {
-                        logger.debug("Fetching branches for repository: {}", repository.getName());
                         Optional<List<Branch>> branchesOpt = githubApiClient.fetchBranches(username,
                                 repository.getName());
                         List<Branch> branches = branchesOpt.orElse(Collections.emptyList());
+
                         return repositoryMapper.toDto(repository, branches);
                     } catch (Exception e) {
                         logger.error("Error fetching branches for repository: {}", repository.getName(), e);
@@ -74,8 +83,7 @@ public class GithubServiceImpl implements GithubService {
     }
 
     @Override
-    public void destroy() throws Exception {
-        System.out.println("Shutting down executor service...");
+    public void close() {
         shutdown();
     }
 }

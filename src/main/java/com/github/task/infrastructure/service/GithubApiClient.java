@@ -13,7 +13,6 @@ public interface GithubApiClient {
      * @param username The GitHub username.
      * @return A List of Repositories.
      * @throws GithubUserNotFoundException if the user is not found.
-     * @throws GithubApiErrorException     for other API related errors.
      */
     List<Repository> fetchRepositories(String username);
 

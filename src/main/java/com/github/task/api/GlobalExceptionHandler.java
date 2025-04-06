@@ -10,8 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.task.application.dto.ErrorDto;
-import com.github.task.domain.exception.GithubApiErrorException;
 import com.github.task.domain.exception.UserNotFoundException;
+import com.github.task.domain.exception.UsernameException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,16 +26,6 @@ public class GlobalExceptionHandler {
                 ex.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(GithubApiErrorException.class)
-    public ResponseEntity<ErrorDto> handleGithubApiErrorException(GithubApiErrorException ex) {
-        logger.error("GitHub API error occurred", ex);
-        ErrorDto errorResponse = new ErrorDto(
-                HttpStatus.SERVICE_UNAVAILABLE.value(),
-                "GitHub API error: " + ex.getMessage());
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(HttpClientErrorException.class)
@@ -59,13 +49,23 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, status);
     }
 
+    @ExceptionHandler(UsernameException.class)
+    public ResponseEntity<ErrorDto> handleUsernameException(UsernameException ex) {
+        logger.warn("Invalid username: {}", ex.getMessage());
+        ErrorDto errorResponse = new ErrorDto(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleGenericException(Exception ex) {
         logger.error("An unexpected error occurred", ex);
 
         ErrorDto errorResponse = new ErrorDto(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal server error: " + ex.getMessage());
+                "Internal server error.");
 
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -4,6 +4,14 @@ public class Branch {
     private String name;
     private Commit commit;
 
+    public Branch() {
+    }
+
+    public Branch(String name, Commit commit) {
+        this.name = name;
+        this.commit = commit;
+    }
+
     public String getName() {
         return name;
     }

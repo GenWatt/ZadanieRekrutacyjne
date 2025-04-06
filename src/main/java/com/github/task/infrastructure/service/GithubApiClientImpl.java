@@ -14,7 +14,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import com.github.task.domain.Constants;
-import com.github.task.domain.exception.GithubApiErrorException;
 import com.github.task.domain.exception.UserNotFoundException;
 import com.github.task.domain.model.Branch;
 import com.github.task.domain.model.Repository;
@@ -27,12 +26,13 @@ public class GithubApiClientImpl implements GithubApiClient {
 
     public GithubApiClientImpl(
             @Qualifier(Constants.GITHUB_CLIENT_QUALIFIER) RestClient restClient) {
+
         this.restClient = restClient;
     }
 
     @Override
     public List<Repository> fetchRepositories(String username) {
-        log.debug("Fetching repositories for user: {}", username);
+        log.info("Fetching repositories for user: {}", username);
 
         try {
             Repository[] repositories = restClient.get()
@@ -43,20 +43,15 @@ public class GithubApiClientImpl implements GithubApiClient {
             return repositories != null ? Arrays.asList(repositories) : Collections.emptyList();
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                log.warn("User not found: {}", username);
                 throw new UserNotFoundException(username);
             }
-            log.error("HTTP error while fetching repositories: {}", ex.getMessage());
             throw ex;
-        } catch (Exception ex) {
-            log.error("Error fetching repositories for user {}: {}", username, ex.getMessage(), ex);
-            throw new GithubApiErrorException("Error fetching repositories: " + ex.getMessage(), ex);
         }
     }
 
     @Override
     public Optional<List<Branch>> fetchBranches(String username, String repoName) {
-        log.debug("Fetching branches for repository: {}/{}", username, repoName);
+        log.info("Fetching branches for repository: {}/{}", username, repoName);
 
         try {
             Branch[] branches = restClient.get()
@@ -65,18 +60,12 @@ public class GithubApiClientImpl implements GithubApiClient {
                     .body(Branch[].class);
 
             return Optional.ofNullable(branches)
-                    .map(Arrays::asList)
-                    .or(Optional::empty);
+                    .map(Arrays::asList);
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                log.warn("Repository or branches not found: {}/{}", username, repoName);
                 return Optional.empty();
             }
-            log.error("HTTP error while fetching branches: {}", ex.getMessage());
             throw ex;
-        } catch (Exception ex) {
-            log.error("Error fetching branches for {}/{}: {}", username, repoName, ex.getMessage(), ex);
-            throw new GithubApiErrorException("Error fetching branches: " + ex.getMessage(), ex);
         }
     }
 }

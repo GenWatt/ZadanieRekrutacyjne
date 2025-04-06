@@ -17,5 +17,4 @@ public class GitHubRestClientConfig {
                 .baseUrl(Constants.GITHUB_API_URL)
                 .build();
     }
-
 }
